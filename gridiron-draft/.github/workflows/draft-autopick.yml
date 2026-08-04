@@ -1,0 +1,20 @@
+name: Draft autopick sweep
+
+# Runs every 15 minutes and hits the deployed app's autopick endpoint, which
+# auto-drafts for anyone whose 24-hour (or however long you set it) pick
+# window has lapsed. Requires two repo secrets (Settings > Secrets > Actions):
+#   SITE_URL     e.g. https://gridiron-draft.vercel.app
+#   CRON_SECRET  same value as the CRON_SECRET env var set on your deployment
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  autopick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger autopick sweep
+        run: |
+          curl -sf -X POST "${{ secrets.SITE_URL }}/api/cron/autopick" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

@@ -1,0 +1,44 @@
+name: Weekly stats sync
+
+# Runs every Tuesday morning (after the weekend's games are final) — pulls
+# the past week's real team stats from CollegeFootballData, writes them to
+# weekly_stats, and recalculates every league's weekly_scores.
+#
+# Repo secrets required (Settings > Secrets and variables > Actions):
+#   CFBD_API_KEY                 free key from collegefootballdata.com
+#   SUPABASE_URL                 same as NEXT_PUBLIC_SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY    from Supabase Project Settings > API
+on:
+  schedule:
+    - cron: "0 12 * * 2" # Tuesdays, 12:00 UTC
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "Week number (leave blank to auto-detect last completed week)"
+        required: false
+      year:
+        description: "Season year (leave blank for current year)"
+        required: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Sync weekly stats and recalculate scores
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.week }}" ]; then ARGS="$ARGS --week ${{ github.event.inputs.week }}"; fi
+          if [ -n "${{ github.event.inputs.year }}" ]; then ARGS="$ARGS --year ${{ github.event.inputs.year }}"; fi
+          npm run sync:stats -- $ARGS
