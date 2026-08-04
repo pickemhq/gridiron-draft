@@ -5,8 +5,8 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(
-    process.env.https://ghbxvotmdephuwwrxrum.supabase.co/rest/v1/,
-    process.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYnh2b3RtZGVwaHV3d3J4cnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MDA5OTIsImV4cCI6MjEwMTM3Njk5Mn0.5IOF8QtwPFXz7NBWS4voPDqAv45KaXt-Dg2G06xNky0,
+    process.env.https://ghbxvotmdephuwwrxrum.supabase.co/rest/v1/!,
+    process.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYnh2b3RtZGVwaHV3d3J4cnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MDA5OTIsImV4cCI6MjEwMTM3Njk5Mn0.5IOF8QtwPFXz7NBWS4voPDqAv45KaXt-Dg2G06xNky0!,
     {
       cookies: {
         get(name: string) {
