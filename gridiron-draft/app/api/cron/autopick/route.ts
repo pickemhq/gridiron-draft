@@ -17,12 +17,12 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: lapsed } = await admin
-    .from("draft_state")
-    .select("league_id, current_league_member_id")
-    .eq("status", "in_progress")
-    .lt("turn_deadline", new Date().toISOString());
-
+ const { data: lapsed } = await admin
+  .from("draft_state")
+  .select("league_id, current_league_member_id")
+  .eq("status", "in_progress")
+  .lt("turn_deadline", new Date().toISOString())
+  .returns<{ league_id: string; current_league_member_id: string | null }[]>();
   if (!lapsed || lapsed.length === 0) {
     return NextResponse.json({ processed: 0 });
   }
