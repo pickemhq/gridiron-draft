@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { makePick, bestAvailableTeam } from "@/lib/draft-server";
-import type { DraftState } from "@/types/database";
 
 /**
  * Called on a schedule (see .github/workflows/draft-autopick.yml, runs every
@@ -18,24 +17,19 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: lapsed, error } = await admin
+  const { data: lapsed } = await admin
     .from("draft_state")
     .select("league_id, current_league_member_id")
     .eq("status", "in_progress")
-    .lt("turn_deadline", new Date().toISOString());
+    .lt("turn_deadline", new Date().toISOString())
+    .returns<{ league_id: string; current_league_member_id: string | null }[]>();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const drafts = (lapsed ?? []) as Pick<DraftState, "league_id" | "current_league_member_id">[];
-
-  if (drafts.length === 0) {
+  if (!lapsed || lapsed.length === 0) {
     return NextResponse.json({ processed: 0 });
   }
 
   let processed = 0;
-  for (const draft of drafts) {
+  for (const draft of lapsed) {
     if (!draft.current_league_member_id) continue;
     const team = await bestAvailableTeam(draft.league_id);
     if (!team) continue;
@@ -51,3 +45,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ processed });
 }
+\
