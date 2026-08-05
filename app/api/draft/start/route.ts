@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { memberForPick } from "@/lib/draft";
 import { sendYourTurnEmail } from "@/lib/email";
+import type { League, LeagueMember } from "@/types/database";
 
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -14,11 +15,12 @@ export async function POST(request: Request) {
   const { leagueId, randomizeOrder } = await request.json();
 
   const { data: league } = await supabase.from("leagues").select("*").eq("id", leagueId).single();
-  if (!league) return NextResponse.json({ error: "League not found" }, { status: 404 });
-  if (league.commissioner_id !== user.id) {
+  const leagueData = (league ?? null) as League | null;
+  if (!leagueData) return NextResponse.json({ error: "League not found" }, { status: 404 });
+  if (leagueData.commissioner_id !== user.id) {
     return NextResponse.json({ error: "Only the commissioner can start the draft" }, { status: 403 });
   }
-  if (league.draft_status !== "not_started") {
+  if (leagueData.draft_status !== "not_started") {
     return NextResponse.json({ error: "Draft already started" }, { status: 400 });
   }
 
@@ -28,23 +30,25 @@ export async function POST(request: Request) {
     .select("*, profiles(email, display_name)")
     .eq("league_id", leagueId);
 
-  if (!members || members.length < 2) {
+  const leagueMembers = (members ?? []) as (LeagueMember & { profiles?: { email: string; display_name: string } })[];
+
+  if (leagueMembers.length < 2) {
     return NextResponse.json({ error: "Need at least 2 members to start a draft" }, { status: 400 });
   }
 
-  let ordered = [...members];
+  let ordered = [...leagueMembers];
   if (randomizeOrder) {
     ordered = ordered.sort(() => Math.random() - 0.5);
   }
   for (let i = 0; i < ordered.length; i++) {
-    await admin.from("league_members").update({ draft_position: i + 1 }).eq("id", ordered[i].id);
+    await admin.from("league_members").update({ draft_position: i + 1 } as Partial<LeagueMember>).eq("id", ordered[i].id);
   }
   ordered.forEach((m, i) => (m.draft_position = i + 1));
 
-  const first = memberForPick(ordered, league.roster_size, 1)!;
+  const first = memberForPick(ordered, leagueData.roster_size, 1)!;
   const deadline =
-    league.draft_type === "slow"
-      ? new Date(Date.now() + league.pick_time_limit_hours * 60 * 60 * 1000).toISOString()
+    leagueData.draft_type === "slow"
+      ? new Date(Date.now() + leagueData.pick_time_limit_hours * 60 * 60 * 1000).toISOString()
       : null;
 
   await admin
@@ -67,7 +71,7 @@ export async function POST(request: Request) {
     await sendYourTurnEmail({
       to: firstMember.profiles.email,
       teamName: firstMember.team_name,
-      leagueName: league.name,
+      leagueName: leagueData.name,
       leagueId,
       deadline,
       pickNumber: 1,

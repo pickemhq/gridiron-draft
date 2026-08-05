@@ -1,5 +1,4 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
 
 /**
  * Bypasses RLS — never import this into client components. Only use inside
@@ -8,7 +7,7 @@ import type { Database } from "@/types/database";
  * their turn to pick").
  */
 export function createAdminClient() {
-  return createSupabaseClient<Database>(
+  return createSupabaseClient<any>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }

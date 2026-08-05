@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { memberForPick, isDraftComplete } from "@/lib/draft";
 import { sendYourTurnEmail } from "@/lib/email";
+import type { CfbTeam } from "@/types/database";
 
 type MakePickResult = { success: true; draftComplete: boolean } | { success: false; error: string };
 
@@ -82,7 +83,7 @@ export async function makePick(params: {
 }
 
 /** Best remaining team by AP rank (unranked teams last, then insertion order). */
-export async function bestAvailableTeam(leagueId: string) {
+export async function bestAvailableTeam(leagueId: string): Promise<Pick<CfbTeam, "id"> | null> {
   const admin = createAdminClient();
   const { data: drafted } = await admin.from("draft_picks").select("cfb_team_id").eq("league_id", leagueId);
   const draftedIds = new Set((drafted ?? []).map((d) => d.cfb_team_id));
@@ -92,5 +93,6 @@ export async function bestAvailableTeam(leagueId: string) {
     .select("id, ap_rank")
     .order("ap_rank", { ascending: true, nullsFirst: false });
 
-  return (allTeams ?? []).find((t) => !draftedIds.has(t.id)) ?? null;
+  const teams = (allTeams ?? []) as Pick<CfbTeam, "id" | "ap_rank">[];
+  return teams.find((t) => !draftedIds.has(t.id)) ?? null;
 }
