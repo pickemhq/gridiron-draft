@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -13,7 +14,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invite code and team name are required" }, { status: 400 });
   }
 
-  const { data: league, error: leagueError } = await supabase
+  const admin = createAdminClient();
+
+  const { data: league, error: leagueError } = await admin
     .from("leagues")
     .select("id, max_members, draft_status")
     .eq("invite_code", inviteCode)
@@ -26,7 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This league's draft has already started" }, { status: 400 });
   }
 
-  const { count } = await supabase
+  const { count } = await admin
     .from("league_members")
     .select("id", { count: "exact", head: true })
     .eq("league_id", league.id);
@@ -35,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This league is full" }, { status: 400 });
   }
 
-  const { error: joinError } = await supabase
+  const { error: joinError } = await admin
     .from("league_members")
     .insert({ league_id: league.id, user_id: user.id, team_name: teamName, draft_position: (count ?? 0) + 1 });
 
