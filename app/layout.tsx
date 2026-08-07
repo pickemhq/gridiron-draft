@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Oswald, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import FeedbackButton from "@/components/FeedbackButton";
 
 const display = Oswald({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
 const body = Inter({ subsets: ["latin"], variable: "--font-body" });
@@ -15,9 +16,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body>
+     <body>
         <Navbar />
         <main>{children}</main>
+        <FeedbackButton />
       </body>
     </html>
   );

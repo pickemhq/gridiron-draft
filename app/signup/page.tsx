@@ -13,20 +13,43 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { display_name: displayName } },
     });
     setLoading(false);
     if (error) return setError(error.message);
+
+    // If email confirmation is required, Supabase returns a user but no
+    // session yet — in that case, don't act like they're signed in.
+    if (!data.session) {
+      setCheckEmail(true);
+      return;
+    }
+
     router.push("/leagues");
     router.refresh();
+  }
+
+  if (checkEmail) {
+    return (
+      <AuthCard title="Check your email" footerHref="/login" footerText="Already confirmed? Sign in">
+        <p className="text-chalk/80">
+          We sent a confirmation link to <span className="text-chalk">{email}</span>. Click it to
+          activate your account, then come back and sign in.
+        </p>
+        <p className="text-chalk/50 text-sm mt-4">
+          Don't see it? Check your spam folder, or wait a minute and try signing up again.
+        </p>
+      </AuthCard>
+    );
   }
 
   return (

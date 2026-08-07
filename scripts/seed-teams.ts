@@ -14,7 +14,9 @@
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
+
 import { createClient } from "@supabase/supabase-js";
+
 const CFBD_KEY = process.env.CFBD_API_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,6 +41,43 @@ type CfbdTeam = {
 
 type CfbdPollTeam = { school: string; rank: number };
 
+/**
+ * Finds the best available AP Top 25 poll for a season: prefers the latest
+ * *regular* season week, falls back to the preseason poll (the only one
+ * that exists before Week 1 has been played), and finally falls back to
+ * last season's final postseason poll if this season has no polls at all
+ * yet. The previous version only checked seasonType=regular, which meant
+ * it silently found nothing — and left teams with stale/wrong ranks —
+ * during the preseason window.
+ */
+async function fetchLatestApPoll(year: number): Promise<CfbdPollTeam[]> {
+  const res = await fetch(`https://api.collegefootballdata.com/rankings?year=${year}`, {
+    headers: cfbdHeaders,
+  });
+  const weeks: { week: number; seasonType: string; polls: { poll: string; ranks: CfbdPollTeam[] }[] }[] =
+    await res.json();
+
+  const findPoll = (seasonType: string) => {
+    const matches = weeks.filter((w) => w.seasonType === seasonType);
+    if (matches.length === 0) return null;
+    const latest = matches.reduce((a, b) => (b.week > a.week ? b : a));
+    return latest.polls.find((p) => p.poll === "AP Top 25")?.ranks ?? null;
+  };
+
+  return (
+    findPoll("regular") ??
+    findPoll("preseason") ??
+    (await (async () => {
+      const prevRes = await fetch(
+        `https://api.collegefootballdata.com/rankings?year=${year - 1}&seasonType=postseason`,
+        { headers: cfbdHeaders }
+      );
+      const prevWeeks: { polls: { poll: string; ranks: CfbdPollTeam[] }[] }[] = await prevRes.json();
+      return prevWeeks[prevWeeks.length - 1]?.polls.find((p) => p.poll === "AP Top 25")?.ranks ?? [];
+    })())
+  );
+}
+
 async function main() {
   const year = new Date().getFullYear();
 
@@ -47,15 +86,7 @@ async function main() {
   });
   const teams: CfbdTeam[] = await teamsRes.json();
 
-  const pollRes = await fetch(
-    `https://api.collegefootballdata.com/rankings?year=${year}&seasonType=regular`,
-    { headers: cfbdHeaders }
-  );
-  const pollWeeks = await pollRes.json();
-  const latestPoll = pollWeeks?.[pollWeeks.length - 1];
-  const apPoll: CfbdPollTeam[] =
-    latestPoll?.polls?.find((p: { poll: string }) => p.poll === "AP Top 25")?.ranks ?? [];
-  const rankBySchool = new Map(apPoll.map((t) => [t.school, t.rank]));
+  const rankBySchool = new Map((await fetchLatestApPoll(year)).map((t) => [t.school, t.rank]));
 
   const rows = teams
     .filter((t) => t.classification === "fbs")

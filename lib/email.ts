@@ -1,10 +1,10 @@
 /**
- * Minimal Resend wrapper for the "you're on the clock" email. Swap the
- * fetch call for any provider (Postmark, SendGrid, Supabase's own SMTP
- * integration) — this is the only place that needs to change.
+ * Minimal Resend wrapper for the "you're on the clock" and feedback emails.
+ * Swap the fetch calls for any provider (Postmark, SendGrid, Supabase's own
+ * SMTP integration) — this is the only file that needs to change.
  *
  * Requires RESEND_API_KEY + EMAIL_FROM in .env.local. If they're not set,
- * this silently no-ops so local dev without an email provider still works.
+ * these silently no-op so local dev without an email provider still works.
  */
 export async function sendYourTurnEmail(params: {
   to: string;
@@ -47,4 +47,32 @@ export async function sendYourTurnEmail(params: {
       `,
     }),
   });
+}
+
+export async function sendFeedbackEmail(params: { message: string; fromEmail: string | null }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  const to = process.env.FEEDBACK_EMAIL;
+  if (!apiKey || !from || !to) {
+    console.warn("RESEND_API_KEY / EMAIL_FROM / FEEDBACK_EMAIL not set — skipping feedback email.");
+    return false;
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject: "Gridiron Draft feedback",
+      html: `
+        <p><strong>From:</strong> ${params.fromEmail ?? "anonymous / not signed in"}</p>
+        <p>${params.message.replace(/\n/g, "<br/>")}</p>
+      `,
+    }),
+  });
+  return res.ok;
 }
