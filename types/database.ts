@@ -107,6 +107,13 @@ export type WeeklyScore = {
   calculated_at: string;
 };
 
+export type Feedback = {
+  id: string;
+  message: string;
+  from_email: string | null;
+  created_at: string;
+};
+
 // Minimal shape satisfying @supabase/ssr's generic constraint. Expand table
 // by table as you wire up more generated columns/relationships.
 export type Database = {
@@ -120,6 +127,7 @@ export type Database = {
       draft_picks: { Row: DraftPick; Insert: Partial<DraftPick>; Update: Partial<DraftPick> };
       weekly_stats: { Row: WeeklyStats; Insert: Partial<WeeklyStats>; Update: Partial<WeeklyStats> };
       weekly_scores: { Row: WeeklyScore; Insert: Partial<WeeklyScore>; Update: Partial<WeeklyScore> };
+      feedback: { Row: Feedback; Insert: Partial<Feedback>; Update: Partial<Feedback> };
     };
   };
 };

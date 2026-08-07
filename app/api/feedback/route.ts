@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { sendFeedbackEmail } from "@/lib/email";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const { message } = await request.json();
@@ -13,12 +13,15 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const sent = await sendFeedbackEmail({ message: message.trim(), fromEmail: user?.email ?? null });
-  if (!sent) {
-    return NextResponse.json(
-      { error: "Feedback email isn't configured yet — see FEEDBACK_EMAIL in the README" },
-      { status: 500 }
-    );
+  // Feedback can come from a signed-out visitor too, and the feedback table
+  // has no public read policy, so this needs the admin client to write.
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("feedback")
+    .insert({ message: message.trim(), from_email: user?.email ?? null });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
