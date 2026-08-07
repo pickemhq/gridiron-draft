@@ -17,6 +17,7 @@ export type Profile = {
   id: string;
   display_name: string;
   email: string;
+  is_admin: boolean;
   created_at: string;
 };
 

@@ -10,12 +10,13 @@ export default async function AdminFeedbackPage() {
 
   if (!user) redirect("/login");
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail || user.email?.toLowerCase() !== adminEmail.toLowerCase()) {
+  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
+
+  if (!profile?.is_admin) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-24 text-center">
         <p className="font-display text-2xl uppercase text-chalk mb-2">Not authorized</p>
-        <p className="text-chalk/50 text-sm">This page is only visible to the site admin.</p>
+        <p className="text-chalk/50 text-sm">This page is only visible to admins.</p>
       </div>
     );
   }
