@@ -12,8 +12,9 @@
  * Re-run any time — it upserts on `school`, so it's safe on a schedule
  * (e.g. weekly, to refresh AP rank) via a GitHub Action / Supabase cron.
  */
+import { config } from "dotenv";
+config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
-
 const CFBD_KEY = process.env.CFBD_API_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

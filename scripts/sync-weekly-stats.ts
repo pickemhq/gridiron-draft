@@ -13,10 +13,11 @@
  * Requires the same env vars as scripts/seed-teams.ts:
  *   CFBD_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
+import { config } from "dotenv";
+config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { calculateWeekTotal } from "../lib/scoring";
 import type { ScoringSettings, WeeklyStats } from "../types/database";
-
 const CFBD_KEY = process.env.CFBD_API_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
